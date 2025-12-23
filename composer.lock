@@ -21,7 +21,8 @@
                 "shasum": ""
             },
             "require": {
-                "php": "^8.2"
+                "php": "^8.2",
+                "laravel/fortify": "^1.30"
             },
             "require-dev": {
                 "php-coveralls/php-coveralls": "^2.2",
