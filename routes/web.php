@@ -4,7 +4,7 @@
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return redirect('/admin/login');
+    return redirect('login');
 });
 
 Route::middleware('auth')->get('/auth-test', function() {
