@@ -1,12 +1,19 @@
 <?php
 
-use App\Http\Controllers\MediaController;
+
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return redirect('/admin/login');
 });
 
-Route::middleware(['auth'])->group(function () {
-    Route::get('/media/{id}', [MediaController::class, 'show'])->name('media.show');
+Route::middleware('auth')->get('/auth-test', function() {
+    $user = auth()->user();
+
+    return [
+        'authenticated' => auth()->check(),
+        'user' => $user ? $user->email : 'null',
+        'user_id' => $user ? $user->id : 'null',
+        'session_id' => session()->getId(),
+    ];
 });
