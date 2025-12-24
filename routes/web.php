@@ -6,11 +6,13 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::middleware('auth')->get('/filament-test', function() {
+Route::get('/filament-test', function() {
+    // without ->middleware('auth')
     return [
-        'panel_exists' => class_exists(\Filament\Facades\Filament::class),
-        'panels' => \Filament\Facades\Filament::getPanels(),
+        'authenticated' => auth()->check(),
         'user' => auth()->user()?->email,
         'session_id' => session()->getId(),
     ];
 });
+
+Route::redirect('/login', '/admin/login')->name('login');
