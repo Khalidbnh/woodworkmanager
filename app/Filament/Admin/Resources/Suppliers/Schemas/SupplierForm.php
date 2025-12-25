@@ -34,6 +34,27 @@ class SupplierForm
                             ->columnSpanFull(),
                     ])
                     ->columns(2),
+                Section::make('Debt Tracking')
+                    ->description('Track manual debts or old balances')
+                    ->schema([
+                        TextInput::make('current_debt')
+                            ->label('Current Debt (MAD)')
+                            ->numeric()
+                            ->prefix('MAD')
+                            ->step(0.01)
+                            ->default(0)
+                            ->helperText('Manual debt tracking (e.g., old unpaid invoices)')
+                            ->placeholder('5000.00'),
+
+                        Textarea::make('debt_notes')
+                            ->label('Debt Notes')
+                            ->rows(2)
+                            ->placeholder('e.g., Old debt from June 2024, payment plan agreed...')
+                            ->columnSpanFull(),
+                    ])
+                    ->columns(2)
+                    ->collapsible()
+                    ->collapsed(),
             ]);
     }
 }

@@ -8,6 +8,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
 
 class SuppliersTable
@@ -22,19 +23,30 @@ class SuppliersTable
                     ->weight('bold'),
 
                 TextColumn::make('phone')
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(),
 
                 TextColumn::make('email')
                     ->searchable(),
+
+                TextColumn::make('current_debt')
+                    ->label('Manual Debt')
+                    ->money('MAD')
+                    ->sortable()
+                    ->color(fn ($state) => $state > 0 ? 'danger' : 'success')
+                    ->weight(fn ($state) => $state > 0 ? 'bold' : 'normal'),
 
                 TextColumn::make('materials_count')
                     ->counts('materials')
                     ->label('Materials')
                     ->badge()
-                    ->color('success'),
+                    ->color('info'),
             ])
             ->filters([
-                //
+                Filter::make('has_debt')
+                    ->query(fn ($query) => $query->where('current_debt', '>', 0))
+                    ->label('Has Debt')
+                    ->toggle(),
             ])
             ->recordActions([
                 ViewAction::make(),
@@ -45,6 +57,7 @@ class SuppliersTable
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),
-            ]);
+            ])
+            ->defaultSort('current_debt', 'desc');
     }
 }
