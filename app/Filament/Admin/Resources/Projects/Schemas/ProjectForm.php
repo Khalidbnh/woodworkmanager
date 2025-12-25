@@ -129,21 +129,23 @@ class ProjectForm
                                                 $material->id => "{$material->name} ({$material->supplier->name}) - {$material->unit_price} MAD/{$material->unit}"
                                             ]);
                                     })
-                                    ->required()
                                     ->searchable()
-                                    ->reactive()
-                                    ->afterStateUpdated(function ($state, Set $set) {
-                                        if ($state) {
-                                            $material = Material::find($state);
-                                            $set('unit_price', $material?->unit_price);
-                                        }
-                                    })
+                                    ->required()
+
                                     ->createOptionForm([
                                         Select::make('supplier_id')
-                                            ->relationship('supplier', 'name')
+                                            ->label('Supplier')
+                                            ->options(\App\Models\Supplier::pluck('name', 'id'))
                                             ->required(),
-                                        TextInput::make('name')->required(),
-                                        TextInput::make('unit_price')->numeric()->required()->prefix('MAD'),
+
+                                        TextInput::make('name')
+                                            ->required(),
+
+                                        TextInput::make('unit_price')
+                                            ->numeric()
+                                            ->required()
+                                            ->prefix('MAD'),
+
                                         Select::make('unit')
                                             ->options([
                                                 'meter' => 'Meter',
@@ -154,6 +156,19 @@ class ProjectForm
                                             ])
                                             ->required(),
                                     ])
+
+                                    // 👇 REQUIRED INSIDE REPEATER
+                                    ->createOptionUsing(function (array $data) {
+                                        return Material::create($data)->id;
+                                    })
+
+                                    ->reactive()
+                                    ->afterStateUpdated(function ($state, Set $set) {
+                                        if ($state) {
+                                            $material = Material::find($state);
+                                            $set('unit_price', $material?->unit_price);
+                                        }
+                                    })
                                     ->columnSpan(3),
 
                                 TextInput::make('quantity')
