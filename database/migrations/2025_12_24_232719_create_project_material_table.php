@@ -13,12 +13,9 @@ return new class extends Migration
     {
         Schema::create('project_material', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('project_id')
-                ->constrained()
-                ->onDelete('cascade');
-            $table->foreignId('material_id')
-                ->constrained()
-                ->onDelete('cascade');
+            $table->foreignId('project_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('material_id')->constrained()->cascadeOnDelete();
+
 
             $table->decimal('quantity', 10, 2);
             $table->decimal('unit_price', 10, 2);

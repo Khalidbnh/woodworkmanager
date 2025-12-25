@@ -117,183 +117,65 @@ class ProjectForm
                 Section::make('Materials & Costs')
                     ->description('Add materials used in this project and track payments')
                     ->schema([
-                        Repeater::make('materials')
-                            ->relationship()
+                        Repeater::make('projectMaterials')
+                            ->relationship('projectMaterials')
                             ->schema([
                                 Select::make('material_id')
                                     ->label('Material')
-                                    ->options(function () {
-                                        return Material::with('supplier')
-                                            ->get()
-                                            ->mapWithKeys(fn ($material) => [
-                                                $material->id => "{$material->name} ({$material->supplier->name}) - {$material->unit_price} MAD/{$material->unit}"
-                                            ]);
-                                    })
+                                    ->relationship(
+                                        name: 'material',
+                                        titleAttribute: 'name'
+                                    )
+                                    ->getOptionLabelFromRecordUsing(
+                                        fn (Material $record) =>
+                                        "{$record->name} ({$record->supplier->name}) - {$record->unit_price} MAD/{$record->unit}"
+                                    )
                                     ->searchable()
                                     ->required()
-
-                                    ->createOptionForm([
-                                        Select::make('supplier_id')
-                                            ->label('Supplier')
-                                            ->options(\App\Models\Supplier::pluck('name', 'id'))
-                                            ->required(),
-
-                                        TextInput::make('name')
-                                            ->required(),
-
-                                        TextInput::make('unit_price')
-                                            ->numeric()
-                                            ->required()
-                                            ->prefix('MAD'),
-
-                                        Select::make('unit')
-                                            ->options([
-                                                'meter' => 'Meter',
-                                                'kg' => 'Kilogram',
-                                                'liter' => 'Liter',
-                                                'piece' => 'Piece',
-                                                'box' => 'Box',
-                                            ])
-                                            ->required(),
-                                    ])
-
-                                    // 👇 REQUIRED INSIDE REPEATER
-                                    ->createOptionUsing(function (array $data) {
-                                        return Material::create($data)->id;
-                                    })
-
                                     ->reactive()
                                     ->afterStateUpdated(function ($state, Set $set) {
                                         if ($state) {
                                             $material = Material::find($state);
-                                            $set('unit_price', $material?->unit_price);
+                                            if ($material) {
+                                                $set('unit_price', $material->unit_price);
+                                                $set('quantity', 1);
+                                            }
                                         }
-                                    })
-                                    ->columnSpan(3),
+                                    }),
 
                                 TextInput::make('quantity')
-                                    ->label('Quantity')
-                                    ->required()
                                     ->numeric()
+                                    ->required()
                                     ->default(1)
-                                    ->minValue(0.01)
-                                    ->step(0.01)
                                     ->reactive()
-                                    ->afterStateUpdated(function ($state, Get $get, Set $set) {
-                                        $unitPrice = floatval($get('unit_price') ?? 0);
-                                        $quantity = floatval($state ?? 0);
-                                        $totalCost = $quantity * $unitPrice;
-                                        $set('total_cost', number_format($totalCost, 2, '.', ''));
-
-                                        $amountPaid = floatval($get('amount_paid') ?? 0);
-                                        $remaining = $totalCost - $amountPaid;
-                                        $set('amount_remaining', number_format($remaining, 2, '.', ''));
-
-                                        // Auto-set status
-                                        if ($amountPaid >= $totalCost) {
-                                            $set('payment_status', 'paid');
-                                        } elseif ($amountPaid > 0) {
-                                            $set('payment_status', 'partial');
-                                        } else {
-                                            $set('payment_status', 'unpaid');
-                                        }
-                                    })
-                                    ->columnSpan(1),
+                                    ->afterStateUpdated(fn ($state, Get $get, Set $set) =>
+                                    $set(
+                                        'total_cost',
+                                        floatval($state) * floatval($get('unit_price') ?? 0)
+                                    )
+                                    ),
 
                                 TextInput::make('unit_price')
-                                    ->label('Unit Price')
-                                    ->required()
                                     ->numeric()
                                     ->prefix('MAD')
-                                    ->step(0.01)
+                                    ->required()
                                     ->reactive()
-                                    ->afterStateUpdated(function ($state, Get $get, Set $set) {
-                                        $quantity = floatval($get('quantity') ?? 0);
-                                        $unitPrice = floatval($state ?? 0);
-                                        $totalCost = $quantity * $unitPrice;
-                                        $set('total_cost', number_format($totalCost, 2, '.', ''));
-
-                                        $amountPaid = floatval($get('amount_paid') ?? 0);
-                                        $remaining = $totalCost - $amountPaid;
-                                        $set('amount_remaining', number_format($remaining, 2, '.', ''));
-                                    })
-                                    ->columnSpan(1),
+                                    ->afterStateUpdated(fn ($state, Get $get, Set $set) =>
+                                    $set(
+                                        'total_cost',
+                                        floatval($state) * floatval($get('quantity') ?? 0)
+                                    )
+                                    ),
 
                                 Placeholder::make('total_cost_display')
                                     ->label('Total Cost')
-                                    ->content(fn (Get $get) => number_format(floatval($get('total_cost') ?? 0), 2) . ' MAD')
-                                    ->columnSpan(1),
-
-                                TextInput::make('total_cost')
-                                    ->label('Total Cost')
-                                    ->numeric()
-                                    ->disabled()
-                                    ->dehydrated()
-                                    ->hidden(),
-
-                                TextInput::make('amount_paid')
-                                    ->label('Amount Paid')
-                                    ->numeric()
-                                    ->prefix('MAD')
-                                    ->step(0.01)
-                                    ->default(0)
-                                    ->reactive()
-                                    ->afterStateUpdated(function ($state, Get $get, Set $set) {
-                                        $totalCost = floatval($get('total_cost') ?? 0);
-                                        $amountPaid = floatval($state ?? 0);
-                                        $remaining = $totalCost - $amountPaid;
-                                        $set('amount_remaining', number_format($remaining, 2, '.', ''));
-
-                                        // Auto-set status
-                                        if ($amountPaid >= $totalCost) {
-                                            $set('payment_status', 'paid');
-                                        } elseif ($amountPaid > 0) {
-                                            $set('payment_status', 'partial');
-                                        } else {
-                                            $set('payment_status', 'unpaid');
-                                        }
-                                    })
-                                    ->columnSpan(1),
-
-                                Placeholder::make('amount_remaining_display')
-                                    ->label('Remaining')
-                                    ->content(fn (Get $get) => number_format(floatval($get('amount_remaining') ?? 0), 2) . ' MAD')
-                                    ->columnSpan(1),
-
-                                TextInput::make('amount_remaining')
-                                    ->numeric()
-                                    ->disabled()
-                                    ->dehydrated()
-                                    ->hidden(),
-
-                                Select::make('payment_status')
-                                    ->label('Payment Status')
-                                    ->options([
-                                        'unpaid' => 'Unpaid',
-                                        'partial' => 'Partial',
-                                        'paid' => 'Paid',
-                                    ])
-                                    ->required()
-                                    ->default('unpaid')
-                                    ->columnSpan(1),
-
-                                DatePicker::make('purchase_date')
-                                    ->label('Purchase Date')
-                                    ->default(now())
-                                    ->native(false)
-                                    ->columnSpan(1),
-
-                                DatePicker::make('paid_date')
-                                    ->label('Paid Date')
-                                    ->native(false)
-                                    ->visible(fn (Get $get) => $get('payment_status') === 'paid')
-                                    ->columnSpan(1),
-
-                                Textarea::make('notes')
-                                    ->label('Notes')
-                                    ->rows(2)
-                                    ->columnSpanFull()
-                                    ->placeholder('Delivery notes, quality, etc.'),
+                                    ->content(fn (Get $get) =>
+                                        number_format(
+                                            floatval($get('quantity') ?? 0) *
+                                            floatval($get('unit_price') ?? 0),
+                                            2
+                                        ) . ' MAD'
+                                    ),
                             ])
                             ->columns(2)
                             ->defaultItems(0)
@@ -304,11 +186,21 @@ class ProjectForm
                                 ? Material::find($state['material_id'])->name . ' - ' . ($state['quantity'] ?? '0') . ' units'
                                 : null
                             )
-                            ->cloneable()
-                            ->reorderableWithButtons(),
+                            ->reorderableWithButtons()
+                            ->cloneable(),
                     ])
                     ->collapsible()
                     ->collapsed(fn ($record) => $record !== null),
-            ]);
+
+                Placeholder::make('total_material_cost')
+                    ->label('Total Materials Cost')
+                    ->content(fn ($record) =>
+                    $record
+                        ? number_format($record->total_material_cost, 2) . ' MAD'
+                        : '0.00 MAD'
+                    )
+
+        ]);
+
     }
 }

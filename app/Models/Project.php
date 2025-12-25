@@ -18,6 +18,7 @@ class Project extends Model
         'end_date',
         'status',
         'estimated_price',
+        'total_material_cost',
         'notes',
     ];
 
@@ -25,6 +26,7 @@ class Project extends Model
         'start_date' => 'date',
         'end_date' => 'date',
         'estimated_price' => 'decimal:2',
+        'total_material_cost' => 'decimal:2',
     ];
 
     // Relationships
@@ -40,21 +42,9 @@ class Project extends Model
             ->withTimestamps();
     }
 
-    public function materials(): BelongsToMany
+    public function projectMaterials(): HasMany
     {
-        return $this->belongsToMany(Material::class, 'project_material')
-            ->withPivot([
-                'quantity',
-                'unit_price',
-                'total_cost',
-                'amount_paid',
-                'amount_remaining',
-                'payment_status',
-                'purchase_date',
-                'paid_date',
-                'notes'
-            ])
-            ->withTimestamps();
+        return $this->hasMany(ProjectMaterial::class);
     }
 
     public function invoices(): HasMany
@@ -62,21 +52,18 @@ class Project extends Model
         return $this->hasMany(Invoice::class);
     }
 
-    // Helper method: Calculate total material cost
-    public function calculateMaterialCost(): float
+    // Recalculate project material cost
+    public function recalculateMaterialCost(): void
     {
-        return $this->materials()->sum('project_material.total_cost') ?? 0;
+        $this->updateQuietly([
+            'total_material_cost' =>
+                $this->projectMaterials()->sum('total_cost'),
+        ]);
     }
 
-    // Helper method: Get final project price
+    // Final price logic
     public function getFinalPrice(): float
     {
-        // If manual price exists, use it
-        if ($this->estimated_price) {
-            return $this->estimated_price;
-        }
-
-        // Otherwise, calculate from materials
-        return $this->calculateMaterialCost();
+        return $this->estimated_price ?? $this->total_material_cost;
     }
 }
