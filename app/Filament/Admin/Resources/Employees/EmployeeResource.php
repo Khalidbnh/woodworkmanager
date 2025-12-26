@@ -18,9 +18,9 @@ class EmployeeResource extends Resource
 {
     protected static ?string $model = Employee::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::User;
-
     protected static ?string $recordTitleAttribute = 'employeeattribute';
+
+    protected static string|null|BackedEnum $navigationIcon = 'heroicon-o-users';
 
     protected static ?string $navigationLabel = 'Employees';
 

@@ -18,15 +18,13 @@ class ClientResource extends Resource
 {
     protected static ?string $model = Client::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::UserGroup;
+    protected static string|null|BackedEnum $navigationIcon = 'heroicon-o-user-group';
 
     protected static ?string $recordTitleAttribute = 'name';
 
     protected static ?string $navigationLabel = 'Clients';
 
     protected static ?int $navigationSort = 1;
-
-    protected static string|null|\UnitEnum $navigationGroup = 'Administration';
 
     public static function form(Schema $schema): Schema
     {
